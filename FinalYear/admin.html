@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administration | Digital Sign-In Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="theme-light dashboard-page">
+    <main class="dashboard-shell">
+      <header class="dashboard-header">
+        <div class="dashboard-brand">
+          <div class="logo-badge">D</div>
+          <div>
+            <p class="eyebrow">Audu Bako Secretariat</p>
+            <h1>Digital Sign-In Auditor</h1>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutButton" type="button">Sign out</button>
+      </header>
+
+      <section class="dashboard-content">
+        <p class="form-title">Administrator portal</p>
+        <h2 id="welcomeHeading">Loading your dashboard…</h2>
+        <p class="dashboard-intro">Review staff accounts and attendance activity.</p>
+
+        <section class="dashboard-card" aria-labelledby="accountsHeading">
+          <div class="card-heading">
+            <div>
+              <p class="form-title">Account management</p>
+              <h3 id="accountsHeading">Registered accounts</h3>
+            </div>
+            <span class="account-count" id="accountCount">— accounts</span>
+          </div>
+          <p id="dashboardStatus" class="form-status" role="status" aria-live="polite">Loading accounts…</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Employee ID</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody id="accountRows"></tbody>
+            </table>
+          </div>
+          <p class="table-note">Showing up to 200 most recently created accounts.</p>
+        </section>
+
+        <section class="dashboard-card admin-attendance-card" aria-labelledby="attendanceHeading">
+          <div class="card-heading">
+            <div>
+              <p class="form-title">Attendance monitoring</p>
+              <h3 id="attendanceHeading">Staff attendance records</h3>
+            </div>
+            <span class="account-count" id="attendanceCount">— records</span>
+          </div>
+          <p id="attendanceStatus" class="form-status" role="status" aria-live="polite">Loading attendance…</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Employee ID</th>
+                  <th>Department</th>
+                  <th>Sign-in</th>
+                  <th>Sign-out</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceRows"></tbody>
+            </table>
+          </div>
+          <p class="table-note">Showing up to 200 most recent attendance records.</p>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const welcomeHeading = document.querySelector('#welcomeHeading');
+      const dashboardStatus = document.querySelector('#dashboardStatus');
+      const accountCount = document.querySelector('#accountCount');
+      const accountRows = document.querySelector('#accountRows');
+      const attendanceStatus = document.querySelector('#attendanceStatus');
+      const attendanceCount = document.querySelector('#attendanceCount');
+      const attendanceRows = document.querySelector('#attendanceRows');
+
+      function displayDate(value) {
+        return value ? value.replace('T', ' ').slice(0, 19) : '—';
+      }
+
+      async function loadDashboard() {
+        try {
+          const [identityResponse, usersResponse, attendanceResponse] = await Promise.all([
+            fetch('/api/me'),
+            fetch('/api/admin/users'),
+            fetch('/api/admin/attendance')
+          ]);
+
+          if (
+            identityResponse.status === 401 ||
+            usersResponse.status === 401 ||
+            attendanceResponse.status === 401
+          ) {
+            window.location.replace('/');
+            return;
+          }
+          if (usersResponse.status === 403 || attendanceResponse.status === 403) {
+            window.location.replace('/');
+            return;
+          }
+          if (!identityResponse.ok || !usersResponse.ok || !attendanceResponse.ok) {
+            throw new Error('Could not load the administrator dashboard.');
+          }
+
+          const identity = await identityResponse.json();
+          const usersData = await usersResponse.json();
+          const attendanceData = await attendanceResponse.json();
+          if (identity.role !== 'administrator') {
+            window.location.replace('/');
+            return;
+          }
+
+          welcomeHeading.textContent = `Welcome, ${identity.name}`;
+          accountCount.textContent = `${usersData.users.length} accounts`;
+          accountRows.replaceChildren();
+
+          for (const user of usersData.users) {
+            const row = document.createElement('tr');
+            for (const value of [
+              user.full_name,
+              user.employee_id,
+              user.email,
+              user.department,
+              user.role
+            ]) {
+              const cell = document.createElement('td');
+              cell.textContent = value;
+              row.append(cell);
+            }
+            accountRows.append(row);
+          }
+
+          dashboardStatus.textContent = usersData.users.length
+            ? ''
+            : 'No accounts have been registered yet.';
+
+          attendanceCount.textContent = `${attendanceData.records.length} records`;
+          attendanceRows.replaceChildren();
+          for (const record of attendanceData.records) {
+            const row = document.createElement('tr');
+            const values = [
+              record.full_name,
+              record.employee_id,
+              record.department,
+              displayDate(record.sign_in_at),
+              displayDate(record.sign_out_at),
+              record.sign_out_at ? 'Complete' : 'In progress'
+            ];
+            for (const value of values) {
+              const cell = document.createElement('td');
+              cell.textContent = value;
+              row.append(cell);
+            }
+            attendanceRows.append(row);
+          }
+          attendanceStatus.textContent = attendanceData.records.length
+            ? ''
+            : 'No attendance records have been submitted yet.';
+        } catch (error) {
+          dashboardStatus.textContent = error.message || 'Could not load the administrator dashboard.';
+          attendanceStatus.textContent = error.message || 'Could not load attendance records.';
+        }
+      }
+
+      document.querySelector('#logoutButton').addEventListener('click', async () => {
+        const button = document.querySelector('#logoutButton');
+        button.disabled = true;
+        try {
+          const response = await fetch('/api/logout', { method: 'POST' });
+          if (!response.ok) {
+            throw new Error('Sign out failed. Please try again.');
+          }
+          window.location.replace('/');
+        } catch (error) {
+          dashboardStatus.textContent = error.message;
+          button.disabled = false;
+        }
+      });
+
+      loadDashboard();
+    </script>
+  </body>
+</html>

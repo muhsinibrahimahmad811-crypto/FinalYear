@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Staff Attendance | Digital Sign-In Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="theme-light dashboard-page">
+    <main class="dashboard-shell">
+      <header class="dashboard-header">
+        <div class="dashboard-brand">
+          <div class="logo-badge">D</div>
+          <div>
+            <p class="eyebrow">Audu Bako Secretariat</p>
+            <h1>Digital Sign-In Auditor</h1>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutButton" type="button">Sign out</button>
+      </header>
+
+      <section class="dashboard-content">
+        <p class="form-title">Staff portal</p>
+        <h2 id="welcomeHeading">Loading your attendance…</h2>
+        <p class="dashboard-intro">Record the start and end of your workday.</p>
+
+        <section class="dashboard-card attendance-card" aria-labelledby="attendanceHeading">
+          <div>
+            <p class="form-title">Today's attendance</p>
+            <h3 id="attendanceHeading">Attendance status</h3>
+            <p class="attendance-state" id="attendanceState" aria-live="polite">Checking your status…</p>
+            <p class="attendance-time" id="attendanceTime"></p>
+          </div>
+          <div class="attendance-actions">
+            <button class="attendance-btn" id="signInButton" type="button" hidden>Sign in</button>
+            <button class="attendance-btn attendance-btn-out" id="signOutButton" type="button" hidden>Sign out for today</button>
+          </div>
+          <p class="form-status attendance-message" id="attendanceMessage" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="dashboard-card attendance-history" aria-labelledby="historyHeading">
+          <div class="card-heading">
+            <div>
+              <p class="form-title">Personal record</p>
+              <h3 id="historyHeading">Recent attendance</h3>
+            </div>
+          </div>
+          <p class="form-status" id="historyStatus" role="status" aria-live="polite">Loading your records…</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sign-in</th>
+                  <th>Sign-out</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const welcomeHeading = document.querySelector('#welcomeHeading');
+      const attendanceState = document.querySelector('#attendanceState');
+      const attendanceTime = document.querySelector('#attendanceTime');
+      const attendanceMessage = document.querySelector('#attendanceMessage');
+      const historyStatus = document.querySelector('#historyStatus');
+      const attendanceRows = document.querySelector('#attendanceRows');
+      const signInButton = document.querySelector('#signInButton');
+      const signOutButton = document.querySelector('#signOutButton');
+
+      function displayDate(value) {
+        return value ? value.replace('T', ' ').slice(0, 19) : '—';
+      }
+
+      async function loadAttendance() {
+        try {
+          const [identityResponse, attendanceResponse] = await Promise.all([
+            fetch('/api/me'),
+            fetch('/api/staff/attendance')
+          ]);
+
+          if (identityResponse.status === 401 || attendanceResponse.status === 401) {
+            window.location.replace('/');
+            return;
+          }
+          if (attendanceResponse.status === 403) {
+            window.location.replace('/');
+            return;
+          }
+          if (!identityResponse.ok || !attendanceResponse.ok) {
+            throw new Error('Could not load attendance information.');
+          }
+
+          const identity = await identityResponse.json();
+          const data = await attendanceResponse.json();
+          if (identity.role !== 'staff') {
+            window.location.replace('/');
+            return;
+          }
+
+          welcomeHeading.textContent = `Welcome, ${identity.name}`;
+          attendanceRows.replaceChildren();
+
+          if (data.active) {
+            attendanceState.textContent = 'You are currently signed in.';
+            attendanceTime.textContent = `Signed in at ${displayDate(data.active.sign_in_at)}`;
+            signInButton.hidden = true;
+            signOutButton.hidden = false;
+          } else {
+            attendanceState.textContent = 'You are currently signed out.';
+            attendanceTime.textContent = '';
+            signInButton.hidden = false;
+            signOutButton.hidden = true;
+          }
+
+          for (const record of data.records) {
+            const row = document.createElement('tr');
+            const values = [
+              displayDate(record.sign_in_at),
+              displayDate(record.sign_out_at),
+              record.sign_out_at ? 'Complete' : 'In progress'
+            ];
+            for (const value of values) {
+              const cell = document.createElement('td');
+              cell.textContent = value;
+              row.append(cell);
+            }
+            attendanceRows.append(row);
+          }
+
+          historyStatus.textContent = data.records.length
+            ? ''
+            : 'No attendance records yet. Sign in to record your first day.';
+        } catch (error) {
+          historyStatus.textContent = error.message || 'Could not load attendance information.';
+        }
+      }
+
+      async function recordAttendance(action, button) {
+        button.disabled = true;
+        attendanceMessage.textContent = 'Saving attendance…';
+        try {
+          const response = await fetch(`/api/staff/attendance/${action}`, { method: 'POST' });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.detail || 'Could not update attendance.');
+          }
+          attendanceMessage.textContent = result.message;
+          await loadAttendance();
+        } catch (error) {
+          attendanceMessage.textContent = error.message || 'Could not update attendance.';
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      signInButton.addEventListener('click', () => recordAttendance('sign-in', signInButton));
+      signOutButton.addEventListener('click', () => recordAttendance('sign-out', signOutButton));
+
+      document.querySelector('#logoutButton').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        try {
+          const response = await fetch('/api/logout', { method: 'POST' });
+          if (!response.ok) {
+            throw new Error('Sign out failed. Please try again.');
+          }
+          window.location.replace('/');
+        } catch (error) {
+          attendanceMessage.textContent = error.message;
+          button.disabled = false;
+        }
+      });
+
+      loadAttendance();
+    </script>
+  </body>
+</html>

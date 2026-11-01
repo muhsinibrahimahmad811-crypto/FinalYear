@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-multipart
+mysql-connector-python
+python-dotenv
+bcrypt
+cryptography
+deepface
+opencv-python-headless

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Sign-In Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="theme-light">
+    <div class="background-glow glow-one"></div>
+    <div class="background-glow glow-two"></div>
+
+    <main class="login-shell">
+      <section class="login-panel">
+        <div class="panel-left">
+          <div class="logo-badge">D</div>
+          <p class="eyebrow">Audu Bako Secretariat</p>
+          <h1>Digital Sign-In Auditor</h1>
+          <p class="tagline">
+            Secure attendance control, identity verification, and audit-ready reporting for staff and visitors.
+          </p>
+
+          <ul class="feature-list">
+            <li>Verified sign-in</li>
+            <li>Timestamped audit trail</li>
+            <li>Attendance reporting</li>
+          </ul>
+        </div>
+
+        <div class="panel-right">
+          <div class="form-wrap">
+            <div class="auth-switch" aria-label="Authentication forms">
+              <button class="switch-btn active" type="button">Sign In</button>
+              <button class="switch-btn" type="button">Sign Up</button>
+            </div>
+
+            <div class="auth-form active" id="loginFormBlock">
+              <p class="form-title">Welcome back</p>
+              <h2>Access your dashboard</h2>
+
+              <form class="login-form" id="loginForm">
+                <div class="input-group">
+                  <label for="roleLogin">Login as</label>
+                  <select id="roleLogin" class="select-input">
+                    <option value="staff">Staff</option>
+                    <option value="administrator">Administrator</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <label for="staffId">Staff ID / Email</label>
+                  <input
+                    type="text"
+                    id="staffId"
+                    name="identifier"
+                    placeholder="Enter staff ID or email"
+                    required
+                  />
+                </div>
+
+                <div class="input-group">
+                  <label for="password">Password</label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+
+                <div class="input-group">
+                  <label>Facial verification</label>
+                  <p class="camera-help">Capture your face to verify your sign-in.</p>
+                  <div class="camera-panel">
+                    <video id="loginCamera" autoplay muted playsinline hidden></video>
+                    <p id="loginCameraStatus" class="camera-status" aria-live="polite">No face captured.</p>
+                    <button class="camera-btn" id="startLoginCamera" type="button">Open camera</button>
+                    <button class="camera-btn camera-btn-secondary" id="captureLoginFace" type="button" disabled>Capture face</button>
+                    <button class="camera-btn camera-btn-secondary" id="stopLoginCamera" type="button" hidden>Stop camera</button>
+                  </div>
+                </div>
+
+                <div class="options-row">
+                  <label class="checkbox">
+                    <input type="checkbox" />
+                    <span>Remember me</span>
+                  </label>
+                  <a href="#">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="login-btn">Login</button>
+                <p id="loginStatus" class="form-status" role="status" aria-live="polite"></p>
+              </form>
+
+              <div class="divider"><span>or</span></div>
+
+              <a href="#" class="secondary-btn">Request admin access</a>
+            </div>
+
+            <div class="auth-form" id="signupFormBlock">
+              <p class="form-title">Create account</p>
+              <h2>Register new user</h2>
+
+              <form class="signup-form" id="signupForm">
+                <div class="input-group">
+                  <label>Account type</label>
+                  <p class="camera-help">New self-service accounts are registered as staff. Administrator accounts must be provisioned by an authorized administrator.</p>
+                </div>
+
+                <div class="input-group half-grid">
+                  <div>
+                    <label for="fullName">Full name</label>
+                    <input type="text" id="fullName" name="full_name" placeholder="Enter full name" required />
+                  </div>
+                  <div>
+                    <label for="employeeId">Employee ID</label>
+                    <input type="text" id="employeeId" name="employee_id" placeholder="Enter employee ID" required />
+                  </div>
+                </div>
+
+                <div class="input-group">
+                  <label for="emailSignup">Email</label>
+                  <input type="email" id="emailSignup" name="email" placeholder="name@secretariat.gov" required />
+                </div>
+
+                <div class="input-group">
+                  <label for="registerPassword">Password</label>
+                  <input type="password" id="registerPassword" name="password" placeholder="Create password" required minlength="10" />
+                </div>
+
+                <div class="input-group">
+                  <label for="department">Department</label>
+                  <input type="text" id="department" name="department" placeholder="Department / Unit" required />
+                </div>
+
+                <div class="input-group">
+                  <label>Facial verification</label>
+                  <p class="camera-help">Your camera frame is used to create an encrypted face template. The original image is not stored.</p>
+                  <div class="camera-panel">
+                    <video id="signupCamera" autoplay muted playsinline hidden></video>
+                    <p id="signupCameraStatus" class="camera-status" aria-live="polite">No face captured.</p>
+                    <button class="camera-btn" id="startSignupCamera" type="button">Open camera</button>
+                    <button class="camera-btn camera-btn-secondary" id="captureSignupFace" type="button" disabled>Capture face</button>
+                    <button class="camera-btn camera-btn-secondary" id="stopSignupCamera" type="button" hidden>Stop camera</button>
+                  </div>
+                </div>
+
+                <label class="biometric-consent">
+                  <input type="checkbox" name="biometric_consent" value="yes" required />
+                  <span>I consent to facial verification and encrypted storage of my face template for account verification.</span>
+                </label>
+
+                <button type="submit" class="login-btn">Create account</button>
+                <p id="signupStatus" class="form-status" role="status" aria-live="polite"></p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const switchButtons = document.querySelectorAll('.switch-btn');
+      const authForms = document.querySelectorAll('.auth-form');
+      const loginForm = document.querySelector('#loginForm');
+      const signupForm = document.querySelector('#signupForm');
+      const loginStatus = document.querySelector('#loginStatus');
+      const signupStatus = document.querySelector('#signupStatus');
+
+      function setupCamera(videoId, statusId, startId, captureId, stopId) {
+        const video = document.querySelector(`#${videoId}`);
+        const status = document.querySelector(`#${statusId}`);
+        const startButton = document.querySelector(`#${startId}`);
+        const captureButton = document.querySelector(`#${captureId}`);
+        const stopButton = document.querySelector(`#${stopId}`);
+        let stream;
+        let capturedImage;
+
+        function stop() {
+          if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+            stream = undefined;
+          }
+          video.srcObject = null;
+          video.hidden = true;
+          captureButton.disabled = true;
+          stopButton.hidden = true;
+          startButton.disabled = false;
+        }
+
+        startButton.addEventListener('click', async () => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            status.textContent = 'Camera access requires HTTPS or localhost and a supported browser.';
+            return;
+          }
+
+          startButton.disabled = true;
+          status.textContent = 'Requesting camera permission…';
+
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user' },
+              audio: false
+            });
+            video.srcObject = stream;
+            video.hidden = false;
+            captureButton.disabled = false;
+            stopButton.hidden = false;
+            status.textContent = 'Camera ready. Position your face and capture.';
+          } catch (error) {
+            startButton.disabled = false;
+            status.textContent = error.name === 'NotAllowedError'
+              ? 'Camera permission was denied. Allow camera access in your browser settings.'
+              : 'Could not start the camera. Check that it is connected and not being used by another app.';
+          }
+        });
+
+        captureButton.addEventListener('click', () => {
+          if (!video.videoWidth || !video.videoHeight) {
+            status.textContent = 'The camera is not ready yet. Try again in a moment.';
+            return;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          canvas.getContext('2d').drawImage(video, 0, 0);
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              status.textContent = 'Could not capture an image. Please try again.';
+              return;
+            }
+            capturedImage = blob;
+            status.textContent = 'Face captured. It will be sent to the local server for verification.';
+            stop();
+          }, 'image/jpeg', 0.9);
+        });
+
+        stopButton.addEventListener('click', () => {
+          stop();
+          status.textContent = 'Camera is off.';
+        });
+
+        return {
+          getImage: () => capturedImage,
+          reset: () => {
+            capturedImage = undefined;
+            stop();
+            status.textContent = 'No face captured.';
+          },
+          stop
+        };
+      }
+
+      const loginCamera = setupCamera(
+        'loginCamera', 'loginCameraStatus', 'startLoginCamera', 'captureLoginFace', 'stopLoginCamera'
+      );
+      const signupCamera = setupCamera(
+        'signupCamera', 'signupCameraStatus', 'startSignupCamera', 'captureSignupFace', 'stopSignupCamera'
+      );
+
+      switchButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const isLogin = button.textContent.trim() === 'Sign In';
+
+          switchButtons.forEach((btn) => btn.classList.toggle('active', btn === button));
+          authForms.forEach((form) => form.classList.toggle('active', isLogin ? form.id === 'loginFormBlock' : form.id === 'signupFormBlock'));
+          loginCamera.reset();
+          signupCamera.reset();
+        });
+      });
+
+      async function submitToApi(url, formData, statusElement) {
+        statusElement.textContent = 'Please wait…';
+        try {
+          const response = await fetch(url, { method: 'POST', body: formData });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.detail || 'The request could not be completed.');
+          }
+          statusElement.textContent = result.message;
+          return result;
+        } catch (error) {
+          statusElement.textContent = error.message || 'Could not connect to the local verification server.';
+          return null;
+        }
+      }
+
+      loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const faceImage = loginCamera.getImage();
+        if (!faceImage) {
+          loginStatus.textContent = 'Open the camera and capture your face before signing in.';
+          return;
+        }
+        const formData = new FormData(loginForm);
+        formData.set('role', document.querySelector('#roleLogin').value);
+        formData.set('face_image', faceImage, 'face.jpg');
+        const result = await submitToApi('/api/login', formData, loginStatus);
+        loginCamera.reset();
+        if (result) {
+          window.location.assign(result.role === 'administrator' ? '/admin' : '/staff');
+        }
+      });
+
+      signupForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const faceImage = signupCamera.getImage();
+        if (!faceImage) {
+          signupStatus.textContent = 'Open the camera and capture your face before creating an account.';
+          return;
+        }
+        const formData = new FormData(signupForm);
+        formData.set('face_image', faceImage, 'face.jpg');
+        const result = await submitToApi('/api/signup', formData, signupStatus);
+        signupCamera.reset();
+        if (result) {
+          signupForm.reset();
+          document.querySelector('.switch-btn').click();
+        }
+      });
+
+      window.addEventListener('pagehide', () => {
+        loginCamera.stop();
+        signupCamera.stop();
+      });
+    </script>
+  </body>
+</html>
